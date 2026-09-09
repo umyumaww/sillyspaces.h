@@ -89,8 +89,10 @@
     html[data-theme="dark"] header p { color:#aa8caa; }
     .scene { position:fixed; inset:0; cursor:grab; touch-action:none; }
     .scene.is-dragging { cursor:grabbing; }
-    .site-logo { position:absolute; z-index:1; top:calc(50% + 12px); left:50%; width:min(300px,48vw); opacity:.3; transform:translate(-50%,-50%); transform-origin:center; pointer-events:none; }
+    .site-logo { position:absolute; z-index:1; top:calc(50% + 12px); left:50%; width:min(300px,48vw); opacity:.3; filter:brightness(1); transform:translate(-50%,-50%); transform-origin:center; pointer-events:none; transition:opacity 360ms ease,filter 420ms ease,transform 420ms cubic-bezier(.2,.8,.2,1); }
     html[data-theme="dark"] .site-logo { opacity:.2; }
+    .site-logo.logo-lit { opacity:.7; filter:brightness(1.2) saturate(1.05) drop-shadow(0 0 8px rgb(255 255 250 / 52%)) drop-shadow(0 0 22px rgb(255 248 232 / 34%)); transform:translate(-50%,-50%) scale(1.04); }
+    html[data-theme="dark"] .site-logo.logo-lit { opacity:.64; filter:brightness(1.08) saturate(1) drop-shadow(0 0 8px rgb(255 255 255 / 42%)) drop-shadow(0 0 20px rgb(244 240 255 / 20%)); transform:translate(-50%,-50%); }
     canvas { position:absolute; z-index:2; inset:0; width:100%; height:100%; }
     .people { position:absolute; z-index:3; inset:0; pointer-events:none; }
     .person {
@@ -117,13 +119,26 @@
     html[data-theme="dark"] .portrait { border-color:#2d222d; box-shadow:0 4px 0 #171019,0 10px 22px rgb(0 0 0 / 48%); }
     html[data-theme="dark"] .name { color:#ff7779; background:#211820; box-shadow:0 3px 0 rgb(0 0 0 / 32%); }
     .profile-panel {
-      position:fixed; z-index:40; top:50%; right:30px; width:min(330px,calc(100vw - 32px)); padding:21px;
-      border:1px solid rgb(93 64 39 / 14%); border-radius:22px; opacity:0; visibility:hidden;
+      position:fixed; z-index:40; top:50%; right:30px; width:min(220px,calc(100vw - 32px));
+      border:1px solid rgb(93 64 39 / 14%); border-radius:15px; opacity:0; visibility:hidden;
       background:rgb(255 250 240 / 97%); box-shadow:0 22px 60px rgb(73 45 23 / 18%);
-      pointer-events:none; transform:translate(18px,-50%) scale(.97); transition:opacity 140ms ease,transform 180ms ease,visibility 140ms;
+      pointer-events:none; transform:translate(18px,-50%) scale(.97); transition:width 180ms ease,opacity 140ms ease,transform 180ms ease,visibility 140ms;
     }
-    .profile-panel.open { opacity:1; visibility:visible; transform:translate(0,-50%) scale(1); }
-    .profile-panel h2 { margin:0 0 13px; font-size:23px; letter-spacing:-.04em; }
+    .profile-panel.open { opacity:1; visibility:visible; pointer-events:auto; transform:translate(0,-50%) scale(1); }
+    .profile-panel:has(.profile-details[open]) { width:min(330px,calc(100vw - 32px)); }
+    .profile-details summary {
+      display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px;
+      border-radius:14px; cursor:pointer; list-style:none; font-size:14px; font-weight:900; letter-spacing:-.015em;
+    }
+    .profile-details summary::-webkit-details-marker { display:none; }
+    .profile-details summary::after {
+      content:""; width:8px; height:8px; flex:0 0 8px; margin:-4px 3px 0 0;
+      border-right:2px solid #d9363a; border-bottom:2px solid #d9363a; transform:rotate(45deg);
+      transition:transform 160ms ease;
+    }
+    .profile-details[open] summary::after { margin:4px 3px 0 0; transform:rotate(225deg); }
+    .profile-details[open] summary { border-bottom:1px solid rgb(93 64 39 / 10%); border-radius:14px 14px 0 0; font-size:17px; }
+    .profile-content { padding:4px 20px 20px; }
     .answer { margin-top:11px; }
     .answer small { display:block; margin-bottom:3px; color:#ad7657; font-size:9px; font-weight:900; letter-spacing:.11em; text-transform:uppercase; }
     .answer p { margin:0; color:#554538; font-size:12px; font-weight:650; line-height:1.42; }
@@ -162,12 +177,26 @@
       transform:translateX(-50%); pointer-events:none;
     }
     .legend-line { width:100px; height:12px; border-radius:10px; background:linear-gradient(90deg,rgb(209 17 70 / 28%),#d11146,#f12d63); clip-path:polygon(0 43%,100% 0,100% 100%,0 57%); }
-    .instructions { position:fixed; z-index:46; top:22px; right:24px; color:#5d4837; }
-    .instructions summary { padding:11px 15px; border:1px solid rgb(100 72 46 / 12%); border-radius:12px; background:rgb(255 250 240 / 92%); box-shadow:0 10px 28px rgb(76 47 24 / 10%); font-size:11px; font-weight:700; cursor:pointer; list-style:none; }
+    .instructions {
+      position:fixed; z-index:46; top:22px; right:24px; width:min(160px,calc(100vw - 28px)); overflow:hidden;
+      border:1px solid rgb(100 72 46 / 12%); border-radius:15px; color:#5d4837;
+      background:rgb(255 250 240 / 94%); box-shadow:0 10px 28px rgb(76 47 24 / 10%);
+      transition:width 180ms ease;
+    }
+    .instructions[open] { width:min(240px,calc(100vw - 28px)); }
+    .instructions summary {
+      display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px;
+      border-radius:14px; font-size:14px; font-weight:900; cursor:pointer; list-style:none;
+    }
     .instructions summary::-webkit-details-marker { display:none; }
-    .instructions summary::after { content:"⌄"; display:inline-block; margin-left:9px; transition:transform 150ms ease; }
-    .instructions[open] summary::after { transform:rotate(180deg); }
-    .instructions ul { margin:7px 0 0; padding:12px 16px 12px 30px; border:1px solid rgb(100 72 46 / 12%); border-radius:12px; background:rgb(255 250 240 / 96%); box-shadow:0 14px 32px rgb(76 47 24 / 14%); font-size:11px; line-height:1.75; white-space:nowrap; }
+    .instructions summary::after {
+      content:""; width:8px; height:8px; flex:0 0 8px; margin:-4px 3px 0 0;
+      border-right:2px solid #d9363a; border-bottom:2px solid #d9363a; transform:rotate(45deg);
+      transition:transform 160ms ease;
+    }
+    .instructions[open] summary { border-bottom:1px solid rgb(93 64 39 / 10%); border-radius:14px 14px 0 0; }
+    .instructions[open] summary::after { margin:4px 3px 0 0; transform:rotate(225deg); }
+    .instructions ul { margin:0; padding:12px 16px 14px 30px; font-size:11px; line-height:1.75; white-space:nowrap; }
     .loading { position:fixed; z-index:50; inset:0; display:grid; place-items:center; color:#9b7d62; background:var(--paper); font-size:12px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; transition:opacity 180ms; }
     .loading.hidden { opacity:0; pointer-events:none; }
     html[data-theme="dark"] .controls { border-color:rgb(255 255 255 / 10%); background:rgb(31 23 32 / 92%); box-shadow:0 12px 36px rgb(0 0 0 / 34%); }
@@ -176,8 +205,8 @@
     html[data-theme="dark"] .zoom-level,
     html[data-theme="dark"] .legend { color:#aa8caa; }
     html[data-theme="dark"] .instructions { color:#eadde8; }
-    html[data-theme="dark"] .instructions summary,
-    html[data-theme="dark"] .instructions ul { border-color:rgb(255 255 255 / 10%); background:rgb(31 23 32 / 94%); box-shadow:0 14px 32px rgb(0 0 0 / 30%); }
+    html[data-theme="dark"] .instructions { border-color:rgb(255 255 255 / 10%); background:rgb(31 23 32 / 94%); box-shadow:0 14px 32px rgb(0 0 0 / 30%); }
+    html[data-theme="dark"] .instructions[open] summary { border-bottom-color:rgb(255 255 255 / 9%); }
     html[data-theme="dark"] .legend-line { background:linear-gradient(90deg,#43ddff,#a169ff,#ff3c99,#ffb347); }
     html[data-theme="dark"] .loading { color:#bfa8bd; background:#0d0b10; }
     body, button {
@@ -223,7 +252,8 @@
     <ul>
       <li>Drag space to rotate</li>
       <li>Drag cards to place</li>
-      <li>Click to lock</li>
+      <li>Click a card to lock it</li>
+      <li>Open its name tab for answers</li>
       <li>Press Esc to unlock</li>
     </ul>
   </details>
@@ -241,7 +271,7 @@
   <script>
     (() => {
       const TAU=Math.PI*2, clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-      const scene=document.querySelector('.scene'),canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d',{alpha:true}),particleLayer=document.querySelector('.particles');
+      const scene=document.querySelector('.scene'),canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d',{alpha:true}),particleLayer=document.querySelector('.particles'),logo=document.querySelector('.site-logo');
       const layer=document.querySelector('.people'),panel=document.querySelector('.profile-panel'),connectionTooltip=document.querySelector('.connection-tooltip'),zoomLabel=document.querySelector('.zoom-level'),themeButton=document.querySelector('[data-action="theme"]');
       const embedded=JSON.parse(document.querySelector('#embedded-data').textContent);
       const particleFragment=document.createDocumentFragment();
@@ -306,7 +336,8 @@
       let userPoints=[],personElements=[],connectionHits=[],hoveredConnection=null,pinnedConnection=null,pinnedPersonId=null;
       let profileOverrides={},currentPositions=[];
       const profileResetTimers={};
-      let ambientAngle=0,ambientFrame=0,lastAmbientDraw=0,orbitSettings=[];
+      let ambientAngle=0,ambientElapsed=0,ambientStartedAt=0,ambientFrame=0,lastAmbientDraw=0,orbitSettings=[];
+      let logoContacts=new Set(),logoLightTimer=0;
       let darkMode=matchMedia('(prefers-color-scheme:dark)').matches;
       try { const saved=localStorage.getItem('silly-spaces-theme'); if(saved) darkMode=saved==='dark'; } catch {}
 
@@ -326,9 +357,18 @@
       const spherePoint=(longitude,latitude)=>({x:Math.cos(latitude)*Math.cos(longitude),y:Math.sin(latitude),z:Math.cos(latitude)*Math.sin(longitude)});
       const project=(point,scale=1)=>{const p=rotate(point);return{x:center.x+p.x*radius*scale,y:center.y+p.y*radius*scale,z:p.z};};
       const shellProject=(point,index=0)=>{
-        const p=rotate(point),orbit=orbitSettings[index]||{speed:1,phase:0},angle=Math.atan2(p.y,p.x)+ambientAngle*orbit.speed+Math.sin(ambientAngle*.7+orbit.phase)*.045,depth=(p.z+1)/2;
+        const p=rotate(point),orbit=orbitSettings[index]||{speed:1,phase:0},angle=Math.atan2(p.y,p.x)+ambientAngle*orbit.speed+Math.sin(ambientAngle*.7+orbit.phase)*.045;
+        let side=1,transit=0;
+        if(ambientElapsed>orbit.transitDelay){
+          const elapsed=ambientElapsed-orbit.transitDelay,cycle=Math.floor(elapsed/orbit.transitInterval),cycleTime=elapsed%orbit.transitInterval,beforeSide=cycle%2?-1:1;
+          if(cycleTime<orbit.transitDuration){
+            const progress=cycleTime/orbit.transitDuration,eased=progress**3*(progress*(progress*6-15)+10);
+            side=beforeSide*(1-eased*2);transit=Math.sin(eased*Math.PI);
+          }else side=-beforeSide;
+        }
+        const z=p.z*side,depth=(z+1)/2;
         const shellRadius=radius*(1.16+depth*.08);
-        return{x:center.x+Math.cos(angle)*shellRadius,y:center.y+Math.sin(angle)*shellRadius,z:p.z,depth};
+        return{x:center.x+Math.cos(angle)*shellRadius*side,y:center.y+Math.sin(angle)*shellRadius*side,z,depth,transit};
       };
       const screenToSphere=(screenX,screenY)=>{
         let cameraX=(screenX-center.x)/radius,cameraY=(screenY-center.y)/radius;
@@ -345,6 +385,30 @@
         if(!override.point)return override;
         const position=project(override.point);
         return{...position,depth:(position.z+1)/2};
+      };
+      const spaceProfiles=(positions)=>{
+        const spaced=positions.map(position=>({...position}));
+        const shellItems=spaced.map((position,index)=>({position,index,angle:Math.atan2(position.y-center.y,position.x-center.x)}))
+          .filter(item=>{const override=profileOverrides[data.users[item.index].id];return !override||override.shellPoint});
+        if(shellItems.length<2)return spaced;
+        const minimumGap=Math.min(.48,TAU/shellItems.length*.5);
+        for(let pass=0;pass<5;pass++){
+          for(let left=0;left<shellItems.length;left++){
+            for(let right=left+1;right<shellItems.length;right++){
+              const a=shellItems[left],b=shellItems[right];
+              const delta=Math.atan2(Math.sin(a.angle-b.angle),Math.cos(a.angle-b.angle)),distance=Math.abs(delta);
+              if(distance>=minimumGap)continue;
+              const direction=distance<.0001?(left%2?1:-1):Math.sign(delta),push=(minimumGap-distance)*.2;
+              a.angle+=direction*push;b.angle-=direction*push;
+            }
+          }
+        }
+        shellItems.forEach(item=>{
+          const distance=Math.hypot(item.position.x-center.x,item.position.y-center.y);
+          spaced[item.index].x=center.x+Math.cos(item.angle)*distance;
+          spaced[item.index].y=center.y+Math.sin(item.angle)*distance;
+        });
+        return spaced;
       };
       const scheduleProfileReset=(userId,node,index)=>{
         clearTimeout(profileResetTimers[userId]);
@@ -365,15 +429,24 @@
       function setData(next){
         data=next; document.querySelector('h1').textContent=data.event.name;document.querySelector('header p').textContent=data.event.subtitle;document.querySelector('.site-logo').src=data.event.logo;
         userPoints=data.users.map((_,i)=>spherePoint(-Math.PI/2+i*TAU/data.users.length,Math.sin(i*2.41)*.46));
-        orbitSettings=data.users.map(user=>{const hash=[...user.id].reduce((total,character)=>((total*31)+character.codePointAt(0))>>>0,7);return{speed:(hash%2?-1:1)*(.42+(hash%58)/100),phase:(hash%628)/100}});
+        orbitSettings=data.users.map((user,index)=>{
+          const hash=[...user.id].reduce((total,character)=>((total*31)+character.codePointAt(0))>>>0,7);
+          return{
+            speed:(hash%2?-1:1)*(.38+(((hash>>>1)+index*37)%140)/100),
+            phase:(((hash>>>8)+index*83)%628)/100,
+            transitDelay:45000+index*28000+((hash>>>4)%8000),
+            transitInterval:240000+(((hash>>>5)+index*4751)%140000),
+            transitDuration:8500+(((hash>>>11)+index*337)%3000)
+          };
+        });
         layer.replaceChildren();
         personElements=data.users.map((user,i)=>{
           const node=document.createElement('article');node.className='person';node.tabIndex=0;node.dataset.id=user.id;
           node.innerHTML=`<div class="portrait"><img src="${user.portrait}" alt="${user.name}'s fuzzy puppet portrait" draggable="false"></div><span class="name">${user.name}</span>`;
-          const open=()=>{if(profileOverrides[user.id])scheduleProfileReset(user.id,node,i);if(pinnedPersonId)return;activeId=user.id;showProfile(user);requestDraw();};
-          const close=()=>{if(pinnedPersonId)return;activeId=null;panel.classList.remove('open');requestDraw();};
+          const open=()=>{if(profileOverrides[user.id])scheduleProfileReset(user.id,node,i);if(pinnedPersonId)return;activeId=user.id;requestDraw();};
+          const close=()=>{if(pinnedPersonId)return;activeId=null;requestDraw();};
           let cardDrag=null,suppressClick=false;
-          const togglePin=event=>{event.stopPropagation();if(suppressClick)return;pinnedConnection=null;hoveredConnection=null;connectionTooltip.classList.remove('open','locked');scene.classList.remove('over-string');personElements.forEach(person=>person.classList.remove('pinned'));if(pinnedPersonId===user.id){pinnedPersonId=null;activeId=user.id;showProfile(user)}else{pinnedPersonId=user.id;activeId=user.id;node.classList.add('pinned');showProfile(user,true)}requestDraw();};
+          const togglePin=event=>{event.stopPropagation();if(suppressClick)return;pinnedConnection=null;hoveredConnection=null;connectionTooltip.classList.remove('open','locked');scene.classList.remove('over-string');personElements.forEach(person=>person.classList.remove('pinned'));if(pinnedPersonId===user.id){pinnedPersonId=null;activeId=null;panel.classList.remove('open')}else{pinnedPersonId=user.id;activeId=user.id;node.classList.add('pinned');showProfile(user)}requestDraw();};
           node.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.stopPropagation();clearTimeout(profileResetTimers[user.id]);node.classList.remove('returning');const position=currentPositions[i]||shellProject(userPoints[i],i);cardDrag={pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,x:position.x,y:position.y};suppressClick=false;node.setPointerCapture(event.pointerId);node.classList.add('dragging')});
           node.addEventListener('pointermove',event=>{if(!cardDrag||event.pointerId!==cardDrag.pointerId)return;const dx=event.clientX-cardDrag.startX,dy=event.clientY-cardDrag.startY;if(Math.abs(dx)+Math.abs(dy)>4)suppressClick=true;profileOverrides[user.id]={x:clamp(cardDrag.x+dx,45,width-45),y:clamp(cardDrag.y+dy,55,height-55),z:1,depth:1};requestDraw()});
           const stopCardDrag=event=>{if(!cardDrag)return;if(node.hasPointerCapture(cardDrag.pointerId))node.releasePointerCapture(cardDrag.pointerId);const dropped=profileOverrides[user.id];if(suppressClick&&dropped?.x!==undefined){profileOverrides[user.id]={point:screenToSphere(dropped.x,dropped.y)};scheduleProfileReset(user.id,node,i)}cardDrag=null;node.classList.remove('dragging');requestDraw();setTimeout(()=>{suppressClick=false},0)};
@@ -384,15 +457,19 @@
         document.querySelector('.loading').classList.add('hidden');requestDraw();
       }
 
-      function showProfile(user,locked=false){
+      function showProfile(user){
         const strongest=data.connections.filter(c=>c.source===user.id||c.target===user.id).sort((a,b)=>b.strength-a.strength).slice(0,3);
         const nameFor=id=>data.users.find(u=>u.id===id)?.name||id;
-        panel.innerHTML=`<h2>${user.name}${locked?'<span class="lock-note">locked · click again</span>':''}</h2>
+        panel.innerHTML=`<details class="profile-details">
+          <summary>${user.name}</summary>
+          <div class="profile-content">
           <div class="answer"><small>Sesame Street self ${user.generatedSesame?'<span class="demo">demo-filled</span>':''}</small><p>${user.sesame}</p></div>
           <div class="answer"><small>Least favorite letter ${user.generatedLetter?'<span class="demo">demo-filled</span>':''}</small><p>${user.leastLetter}</p></div>
           <div class="answer"><small>Where we met</small><p>${user.whereMet}</p></div>
           <div class="answer"><small>Silly Spaces attended</small><p>${user.eventsAttended.length?user.eventsAttended.join(' · '):'None recorded'}</p></div>
-          <div class="answer"><small>Strongest inferred ties</small><div class="ties">${strongest.map(c=>{const other=c.source===user.id?c.target:c.source;return `<span class="tie">${nameFor(other)} · ${Math.round(c.strength*100)}%</span>`}).join('')}</div></div>`;
+          <div class="answer"><small>Strongest inferred ties</small><div class="ties">${strongest.map(c=>{const other=c.source===user.id?c.target:c.source;return `<span class="tie">${nameFor(other)} · ${Math.round(c.strength*100)}%</span>`}).join('')}</div></div>
+          </div>
+        </details>`;
         panel.classList.add('open');
       }
 
@@ -451,14 +528,28 @@
         ctx.globalCompositeOperation='source-over';
       }
 
+      function checkLogoContacts(positions){
+        const logoWidth=Math.min(300,width*.48),logoRatio=(logo.naturalHeight&&logo.naturalWidth)?logo.naturalHeight/logo.naturalWidth:.56;
+        const horizontalReach=logoWidth*.5+42,verticalReach=logoWidth*logoRatio*.5+54,currentContacts=new Set();
+        positions.forEach((position,index)=>{
+          if(Math.abs(position.x-center.x)>horizontalReach||Math.abs(position.y-center.y)>verticalReach)return;
+          currentContacts.add(index);
+          if(logoContacts.has(index))return;
+          logo.classList.add('logo-lit');clearTimeout(logoLightTimer);
+          logoLightTimer=setTimeout(()=>logo.classList.remove('logo-lit'),2000);
+        });
+        logoContacts=currentContacts;
+      }
+
       function draw(){
-        frame=0;radius=Math.min(width,height)*.32*zoom;drawSphere();const positions=userPoints.map((point,index)=>placedPosition(profileOverrides[data.users[index].id],point,index));currentPositions=positions;drawConnections(positions);
+        frame=0;radius=Math.min(width,height)*.32*zoom;drawSphere();const positions=spaceProfiles(userPoints.map((point,index)=>placedPosition(profileOverrides[data.users[index].id],point,index)));currentPositions=positions;checkLogoContacts(positions);drawConnections(positions);
         const order=positions.map((p,i)=>({i,z:p.z})).sort((a,b)=>a.z-b.z);order.forEach((item,index)=>personElements[item.i].style.zIndex=String(10+index));
-        positions.forEach((p,i)=>{const scale=.76+p.depth*.27;personElements[i].style.transform=`translate3d(${p.x-56}px,${p.y-69}px,0) scale(${scale})`;personElements[i].style.opacity=String(.7+p.depth*.3)});
+        positions.forEach((p,i)=>{const scale=(.76+p.depth*.27)*(1-(p.transit||0)*.16);personElements[i].style.transform=`translate3d(${p.x-56}px,${p.y-69}px,0) scale(${scale})`;personElements[i].style.opacity=String(.7+p.depth*.3)});
       }
       function requestDraw(){if(!frame)frame=requestAnimationFrame(draw)}
       function runAmbient(time){
-        if(time-lastAmbientDraw>40){ambientAngle=time*.000018;lastAmbientDraw=time;requestDraw()}
+        if(!ambientStartedAt)ambientStartedAt=time;
+        if(time-lastAmbientDraw>40){ambientElapsed=time-ambientStartedAt;ambientAngle=ambientElapsed*.000018;lastAmbientDraw=time;requestDraw()}
         ambientFrame=requestAnimationFrame(runAmbient);
       }
       function runInertia(){cancelAnimationFrame(inertia);const tick=()=>{velocity.x*=.94;velocity.y*=.94;if(Math.abs(velocity.x)+Math.abs(velocity.y)<.00008)return;yaw+=velocity.x;pitch=clamp(pitch+velocity.y,-1.15,1.15);requestDraw();inertia=requestAnimationFrame(tick)};inertia=requestAnimationFrame(tick)}
