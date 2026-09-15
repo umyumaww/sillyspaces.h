@@ -88,18 +88,19 @@
     header p { margin:4px 0 0; color:#96775d; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
     html[data-theme="dark"] header p { color:#aa8caa; }
     .monthly-question {
-      position:fixed; z-index:32; top:clamp(92px,17vh,150px); left:50%; width:min(720px,86vw); max-width:min(720px,86vw); margin:0;
+      position:fixed; z-index:32; top:clamp(72px,12vh,120px); left:50%; width:min(780px,82vw); max-width:min(780px,82vw); margin:0;
       color:#6a5342; opacity:0; text-align:center; pointer-events:none;
-      transform:translateX(-50%);
+      transform:translateX(-50%); overflow:hidden;
       font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
-      font-size:clamp(26px,4.1vw,50px); font-weight:700; font-style:normal; letter-spacing:-.045em; line-height:1.16; text-transform:none;
-      transition:opacity 1.1s ease,top 1.35s cubic-bezier(.22,.8,.2,1),left 1.35s cubic-bezier(.22,.8,.2,1),bottom 1.35s cubic-bezier(.22,.8,.2,1),width 1.35s cubic-bezier(.22,.8,.2,1),max-width 1.35s cubic-bezier(.22,.8,.2,1),font-size 1.35s cubic-bezier(.22,.8,.2,1),transform 1.35s cubic-bezier(.22,.8,.2,1);
+      font-size:clamp(22px,4.2vw,56px); font-weight:700; font-style:normal; letter-spacing:-.045em; line-height:1.14; text-transform:none;
+      transition:opacity 1.1s ease;
     }
     .monthly-question.visible { opacity:.5; }
     .monthly-question.docked {
       top:auto; left:24px; bottom:72px; width:min(260px,62vw); max-width:min(260px,62vw);
       font-size:clamp(13px,1.4vw,16px); letter-spacing:-.02em; line-height:1.28; text-align:left;
-      transform:none; opacity:.42;
+      transform:none; opacity:.42; overflow:visible;
+      transition:opacity 1.1s ease,top 1.35s cubic-bezier(.22,.8,.2,1),left 1.35s cubic-bezier(.22,.8,.2,1),bottom 1.35s cubic-bezier(.22,.8,.2,1),width 1.35s cubic-bezier(.22,.8,.2,1),max-width 1.35s cubic-bezier(.22,.8,.2,1),font-size 1.35s cubic-bezier(.22,.8,.2,1),transform 1.35s cubic-bezier(.22,.8,.2,1);
     }
     .monthly-question.faded, .monthly-question.visible.faded, .monthly-question.docked.faded { opacity:0; }
     .doodle-arrow {
@@ -314,11 +315,17 @@
       text-transform:none;
     }
     header p { font-weight:700; font-style:italic; }
+    @media (max-height:700px) {
+      .monthly-question:not(.docked) { top:clamp(48px,7vh,80px); width:min(560px,70vw); max-width:min(560px,70vw); font-size:clamp(14px,3.2vh,28px); }
+    }
+    @media (max-height:500px) {
+      .monthly-question:not(.docked) { top:clamp(36px,6vh,56px); width:min(420px,62vw); max-width:min(420px,62vw); font-size:clamp(13px,4.2vh,18px); }
+    }
     @media (max-width:760px) {
       header { top:16px; left:16px; max-width:52vw; }
       h1 { font-size:clamp(24px,7vw,30px); }
       header p { margin-top:2px; font-size:8px; letter-spacing:.1em; }
-      .monthly-question { top:clamp(70px,14vh,110px); width:min(320px,86vw); max-width:min(320px,86vw); font-size:clamp(20px,6.2vw,28px); }
+      .monthly-question { top:clamp(58px,11vh,88px); width:min(280px,72vw); max-width:min(280px,72vw); font-size:clamp(16px,4.4vw,22px); }
       .monthly-question.docked { left:12px; bottom:58px; width:min(220px,62vw); max-width:min(220px,62vw); font-size:12px; }
       .site-logo { width:min(240px,52vw); }
       .person { width:80px; }
@@ -477,6 +484,7 @@
       }
       let data=embedded, dpr=1, width=0, height=0, radius=0, center={x:0,y:0};
       let yaw=-.35,pitch=.12,zoom=.68,dragging=false,last={x:0,y:0},velocity={x:0,y:0},frame=0,activeId=null,inertia=0,dragDistance=0;
+      let layoutPrompt=()=>{};
       let userPoints=[],personElements=[],connectionHits=[],hoveredConnection=null,pinnedConnection=null,pinnedPersonId=null;
       let profileOverrides={},currentPositions=[];
       const profileResetTimers={};
@@ -674,7 +682,7 @@
       }
 
       function resize(){
-        width=innerWidth;height=innerHeight;profilePlacement=null;dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';ctx.setTransform(dpr,0,0,dpr,0,0);center={x:width/2,y:height/2+12};radius=Math.min(width,height)*.32*zoom;requestDraw();
+        width=innerWidth;height=innerHeight;profilePlacement=null;dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';ctx.setTransform(dpr,0,0,dpr,0,0);center={x:width/2,y:height/2+12};radius=Math.min(width,height)*.32*zoom;layoutPrompt();requestDraw();
       }
 
       function drawSphere(){
@@ -819,6 +827,40 @@
       addEventListener('resize',resize,{passive:true});
       applyTheme();resize();setData(embedded);zoomLabel.textContent=Math.round(zoom*100)+'%';
       const monthlyQuestion=document.querySelector('.monthly-question'),doodleArrow=document.querySelector('.doodle-arrow'),introZoom=zoom;
+      let promptFitFrame=0;
+      const placeMonthlyQuestion=()=>{
+        const apply=()=>{
+          if(monthlyQuestion.classList.contains('docked')||monthlyQuestion.classList.contains('faded')){
+            monthlyQuestion.style.top='';monthlyQuestion.style.fontSize='';monthlyQuestion.style.maxHeight='';monthlyQuestion.style.width='';monthlyQuestion.style.maxWidth='';
+            return;
+          }
+          const headerBottom=document.querySelector('header')?.getBoundingClientRect().bottom||64;
+          const laptop=width>760;
+          const introRadius=Math.min(width,height)*.32*introZoom;
+          const globeTop=center.y-introRadius;
+          const bandTop=Math.max(headerBottom+(laptop?22:16),12);
+          const bandBottom=globeTop-(laptop?8:16);
+          const available=Math.max(32,bandBottom-bandTop);
+          const boxWidth=laptop?Math.min(820,Math.max(280,width*.78)):Math.min(620,Math.max(180,width*.72));
+          monthlyQuestion.style.width=`${boxWidth}px`;
+          monthlyQuestion.style.maxWidth=`${boxWidth}px`;
+          monthlyQuestion.style.maxHeight=`${available}px`;
+          let size=laptop?Math.min(available*.5,boxWidth*.08,56):Math.min(available*.3,boxWidth*.068,36);
+          size=Math.max(12,size);
+          monthlyQuestion.style.fontSize=`${size}px`;
+          let guard=40;
+          while(guard--&&monthlyQuestion.scrollHeight>available&&size>12){
+            size-=1;monthlyQuestion.style.fontSize=`${size}px`;
+          }
+          const used=Math.min(monthlyQuestion.scrollHeight,available);
+          monthlyQuestion.style.top=`${bandTop+Math.max(0,(available-used)*(laptop?.9:.72))}px`;
+        };
+        apply();
+        cancelAnimationFrame(promptFitFrame);
+        promptFitFrame=requestAnimationFrame(apply);
+      };
+      layoutPrompt=placeMonthlyQuestion;
+      placeMonthlyQuestion();
       const placeDoodleArrow=()=>{
         const mark=monthlyQuestion.querySelector('.question-mark'),join=document.querySelector('.join-link');
         if(!monthlyQuestion.classList.contains('docked')||monthlyQuestion.classList.contains('faded')||!mark||!join){doodleArrow.classList.remove('visible');return}
@@ -832,12 +874,12 @@
         requestAnimationFrame(tick);
       };
       const fadePrompt=()=>{monthlyQuestion.classList.add('faded');doodleArrow.classList.add('faded')};
-      if(matchMedia('(prefers-reduced-motion:reduce)').matches){monthlyQuestion.classList.add('visible','docked');zoom=1;zoomLabel.textContent='100%';requestDraw();requestAnimationFrame(placeDoodleArrow);setTimeout(fadePrompt,60000)}
+      if(matchMedia('(prefers-reduced-motion:reduce)').matches){monthlyQuestion.classList.add('visible','docked');placeMonthlyQuestion();zoom=1;zoomLabel.textContent='100%';requestDraw();requestAnimationFrame(placeDoodleArrow);setTimeout(fadePrompt,60000)}
       else{
         setTimeout(()=>monthlyQuestion.classList.add('visible'),1400);
-        setTimeout(()=>{monthlyQuestion.classList.add('docked');if(Math.abs(zoom-introZoom)<.05)growGlobe();setTimeout(placeDoodleArrow,1450);setTimeout(fadePrompt,60000)},8200);
+        setTimeout(()=>{monthlyQuestion.classList.add('docked');placeMonthlyQuestion();if(Math.abs(zoom-introZoom)<.05)growGlobe();setTimeout(placeDoodleArrow,1450);setTimeout(fadePrompt,60000)},8200);
       }
-      addEventListener('resize',()=>{if(monthlyQuestion.classList.contains('docked'))placeDoodleArrow()},{passive:true});
+      addEventListener('resize',()=>{placeMonthlyQuestion();if(monthlyQuestion.classList.contains('docked'))placeDoodleArrow()},{passive:true});
       if(!matchMedia('(prefers-reduced-motion:reduce)').matches)ambientFrame=requestAnimationFrame(runAmbient);
       if(location.protocol!=='file:')fetch(`data.json?v=${embedded.revision}`,{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject(r.status)).then(remote=>{if(remote.revision===embedded.revision)setData(remote)}).catch(error=>console.warn('Using embedded data:',error));
     })();
