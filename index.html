@@ -139,7 +139,7 @@
     canvas { position:absolute; z-index:2; inset:0; width:100%; height:100%; }
     .people { position:absolute; z-index:3; inset:0; pointer-events:none; }
     .person {
-      position:absolute; top:0; left:0; z-index:10; width:112px; pointer-events:auto;
+      position:absolute; top:0; left:0; z-index:10; width:80px; pointer-events:auto;
       text-align:center; will-change:transform; transform-origin:center;
       transition:filter 140ms ease; contain:layout style; cursor:grab; touch-action:none; user-select:none;
     }
@@ -147,8 +147,8 @@
     .person.returning { transition:transform 650ms cubic-bezier(.2,.8,.2,1),filter 140ms ease; }
     .person:hover, .person:focus-visible { filter:drop-shadow(0 10px 10px rgb(124 34 27 / 26%)); outline:none; }
     .portrait {
-      width:88px; height:116px; margin:auto; padding:5px; overflow:hidden; border:2px solid rgb(102 73 46 / 10%);
-      border-radius:15px; background:#fffaf0; box-shadow:0 5px 0 #baa588, 0 13px 24px rgb(77 47 24 / 22%);
+      width:64px; height:84px; margin:auto; padding:4px; overflow:hidden; border:2px solid rgb(102 73 46 / 10%);
+      border-radius:12px; background:#fffaf0; box-shadow:0 4px 0 #baa588, 0 10px 18px rgb(77 47 24 / 22%);
       transition:transform 150ms ease, border-color 150ms ease;
     }
     .person:hover .portrait, .person:focus-visible .portrait { transform:scale(1.1); border-color:#fff; }
@@ -158,11 +158,11 @@
     .person.pinned:focus-visible .portrait {
       border-color:#ff5257; box-shadow:0 0 0 4px rgb(255 82 87 / 22%),0 0 32px rgb(255 64 94 / 48%); transform:scale(1);
     }
-    .portrait img { width:100%; height:100%; border-radius:9px; object-fit:cover; pointer-events:none; }
+    .portrait img { width:100%; height:100%; border-radius:8px; object-fit:cover; pointer-events:none; }
     .name {
-      display:inline-block; max-width:110px; margin-top:7px; padding:4px 9px 5px; overflow:hidden;
-      border-radius:7px; color:#d72d2f; background:#fffaf0; box-shadow:0 3px 0 rgb(78 49 28 / 10%);
-      font-size:12px; font-weight:900; text-overflow:ellipsis; white-space:nowrap;
+      display:inline-block; max-width:78px; margin-top:5px; padding:3px 7px 4px; overflow:hidden;
+      border-radius:6px; color:#d72d2f; background:#fffaf0; box-shadow:0 3px 0 rgb(78 49 28 / 10%);
+      font-size:10px; font-weight:900; text-overflow:ellipsis; white-space:nowrap;
       opacity:0; transform:translateY(3px); pointer-events:none;
       transition:opacity 150ms ease,transform 150ms ease;
     }
@@ -776,7 +776,7 @@
         const expandedWidth=Math.min(330,width-(compact?24:32));
         const expandedHeight=Math.min((summary?.offsetHeight||42)+(content?.scrollHeight||280)+(compact?16:20),height-(compact?24:24));
         const scale=(.76+position.depth*.27)*(1-(position.transit||0)*.16)*(data.users[index].id===pinnedPersonId?1.42:1);
-        const halfCardWidth=(compact?29:56)*scale,halfCardHeight=(compact?40:69)*scale;
+        const halfCardWidth=(compact?29:40)*scale,halfCardHeight=(compact?40:50)*scale;
         const card={left:position.x-halfCardWidth,right:position.x+halfCardWidth,top:position.y-halfCardHeight,bottom:position.y+halfCardHeight};
         const anchors={
           right:{ax:card.right+gap,ay:position.y-22,tx:'0px',ty:'0px',x0:0,y0:0},
@@ -1045,7 +1045,7 @@
       function draw(){
         frame=0;radius=Math.min(width,height)*.32*zoom;drawSphere();const positions=spaceProfiles(userPoints.map((point,index)=>placedPosition(profileOverrides[data.users[index].id],point,index)));currentPositions=positions;checkLogoContacts(positions);drawConnections(positions);
         const order=positions.map((p,i)=>({i,z:p.z})).sort((a,b)=>a.z-b.z);order.forEach((item,index)=>personElements[item.i].style.zIndex=String(10+index+(data.users[item.i].id===pinnedPersonId?24:0)));
-        const compact=width<=760,cardOffsetX=compact?29:56,cardOffsetY=compact?40:69;
+        const compact=width<=760,cardOffsetX=compact?29:40,cardOffsetY=compact?40:50;
         positions.forEach((p,i)=>{const focused=data.users[i].id===pinnedPersonId;const scale=(.76+p.depth*.27)*(1-(p.transit||0)*.16)*(focused?1.42:1);personElements[i].style.transform=`translate3d(${p.x-cardOffsetX}px,${p.y-cardOffsetY}px,0) scale(${scale})`;personElements[i].style.opacity=String(.7+p.depth*.3)});
         if(pinnedPersonId){const index=data.users.findIndex(user=>user.id===pinnedPersonId);if(index>=0)positionProfilePanel(index)}
       }
@@ -1089,8 +1089,8 @@
         const target=data.users.find(user=>user.id===hit.connection.target);
         const heading=document.createElement('strong');
         const detail=document.createElement('span');
-        heading.textContent=`${source.name} ↔ ${target.name} · ${Math.round(hit.connection.strength*100)}%${locked?' · LOCKED':''}`;
-        detail.textContent=hit.connection.rationale+(locked?' Click this string again or press Escape to unlock.':'');
+        heading.textContent=`${source.name} ↔ ${target.name} · ${Math.round(hit.connection.strength*100)}%`;
+        detail.textContent=hit.connection.rationale;
         connectionTooltip.replaceChildren(heading,detail);
         connectionTooltip.style.left=Math.min(event.clientX+16,innerWidth-296)+'px';
         connectionTooltip.style.top=Math.min(event.clientY+16,innerHeight-90)+'px';
