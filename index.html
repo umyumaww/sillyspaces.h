@@ -488,7 +488,7 @@
           <li>Hover a card to see someone's name. Hover a string to see why two people are linked.</li>
           <li>Click a card to focus them — everyone holds still, and you only see their strongest connections.</li>
           <li>Click them again to read their answers. Click empty space or press Escape when you're done.</li>
-          <li>You can drag cards around; they'll settle back onto the rim.</li>
+          <li>You can drag cards around; they'll settle back onto the rim. In focus, you can park one inside the globe — it slides back out when you defocus.</li>
         </ul>
       </details>
     </div>
@@ -647,7 +647,7 @@
           snapCardToShell(user.id,index,position.x,position.y,personElements[index]);
         });
       };
-      let cardMotion=[];
+      let cardMotion=[],parkReturn=null;
       const spaceProfiles=(positions)=>{
         const spaced=positions.map(position=>({...position}));
         if(cardMotion.length!==spaced.length) cardMotion=spaced.map(position=>({angle:Math.atan2(position.y-center.y,position.x-center.x)}));
@@ -670,7 +670,7 @@
       };
       const scheduleProfileReset=(userId,node,index)=>{
         clearTimeout(profileResetTimers[userId]);
-        if(!profileOverrides[userId]||profileOverrides[userId].shellPoint)return;
+        if(pinnedPersonId||!profileOverrides[userId]||profileOverrides[userId].shellPoint)return;
         profileResetTimers[userId]=setTimeout(()=>{
           delete profileResetTimers[userId];
           const position=currentPositions[index];
@@ -717,7 +717,7 @@
           let cardDrag=null,suppressClick=false;
           node.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.stopPropagation();node.classList.remove('returning');const position=currentPositions[i]||shellProject(userPoints[i],i);cardDrag={pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,x:position.x,y:position.y};suppressClick=false;node.setPointerCapture(event.pointerId)});
           node.addEventListener('pointermove',event=>{if(!cardDrag||event.pointerId!==cardDrag.pointerId)return;const dx=event.clientX-cardDrag.startX,dy=event.clientY-cardDrag.startY;if(Math.abs(dx)+Math.abs(dy)>4){if(!suppressClick){suppressClick=true;clearTimeout(profileResetTimers[user.id]);node.classList.add('dragging')}profileOverrides[user.id]={x:clamp(cardDrag.x+dx,45,width-45),y:clamp(cardDrag.y+dy,55,height-55),z:1,depth:1};requestDraw()}});
-          const stopCardDrag=event=>{if(!cardDrag)return;if(node.hasPointerCapture(cardDrag.pointerId))node.releasePointerCapture(cardDrag.pointerId);const dropped=profileOverrides[user.id];if(suppressClick&&dropped?.x!==undefined){snapCardToShell(user.id,i,dropped.x,dropped.y,node)}cardDrag=null;node.classList.remove('dragging');requestDraw()};
+          const stopCardDrag=event=>{if(!cardDrag)return;if(node.hasPointerCapture(cardDrag.pointerId))node.releasePointerCapture(cardDrag.pointerId);const dropped=profileOverrides[user.id];if(suppressClick&&dropped?.x!==undefined){if(pinnedPersonId)profileOverrides[user.id]={x:dropped.x,y:dropped.y,z:1,depth:1};else snapCardToShell(user.id,i,dropped.x,dropped.y,node)}cardDrag=null;node.classList.remove('dragging');requestDraw()};
           node.addEventListener('pointerup',event=>{const dragged=suppressClick;stopCardDrag(event);if(dragged||(event.button!==0&&event.pointerType!=='touch'))return;activateCard(user,i,node)});
           node.addEventListener('pointercancel',stopCardDrag);
           node.addEventListener('pointerenter',open);node.addEventListener('pointerleave',close);node.addEventListener('focus',open);node.addEventListener('blur',close);
@@ -729,11 +729,39 @@
         document.querySelector('.loading').classList.add('hidden');requestDraw();
       }
 
+      function beginParkReturn(){
+        const items=[];
+        data.users.forEach((user,index)=>{
+          const override=profileOverrides[user.id];
+          if(!override||override.shellPoint||override.x===undefined)return;
+          const angle=Math.atan2(override.y-center.y,override.x-center.x);
+          const natural=shellProject(userPoints[index],index);
+          const shellR=Math.hypot(natural.x-center.x,natural.y-center.y);
+          items.push({id:user.id,index,x0:override.x,y0:override.y,x1:center.x+Math.cos(angle)*shellR,y1:center.y+Math.sin(angle)*shellR});
+          personElements[index]?.classList.add('returning');
+        });
+        if(!items.length){parkReturn=null;return;}
+        parkReturn={started:performance.now(),duration:matchMedia('(prefers-reduced-motion:reduce)').matches?0:650,items};
+        requestDraw();
+      }
+      function stepParkReturn(){
+        if(!parkReturn)return;
+        const elapsed=performance.now()-parkReturn.started;
+        const t=parkReturn.duration<=0?1:Math.min(1,elapsed/parkReturn.duration);
+        const eased=1-Math.pow(1-t,3);
+        parkReturn.items.forEach(item=>{
+          profileOverrides[item.id]={x:item.x0+(item.x1-item.x0)*eased,y:item.y0+(item.y1-item.y0)*eased,z:1,depth:1};
+        });
+        if(t<1){requestDraw();return;}
+        parkReturn.items.forEach(item=>snapCardToShell(item.id,item.index,item.x1,item.y1,personElements[item.index]));
+        parkReturn=null;
+      }
       function clearPersonFocus(){
         pinnedPersonId=null;activeId=null;
         stopFocusPulse();
         panel.classList.remove('open');
         personElements.forEach(person=>person.classList.remove('pinned'));
+        beginParkReturn();
       }
 
       function startFocusPulse(){
@@ -758,12 +786,13 @@
           if(panel.classList.contains('open'))clearPersonFocus();
           else showProfile(user,index);
         }else{
+          const entering=!pinnedPersonId;
           personElements.forEach(person=>person.classList.remove('pinned'));
           panel.classList.remove('open');
           pinnedPersonId=user.id;activeId=user.id;
           node.classList.add('pinned');
           startFocusPulse();
-          snapAllCardsToShell();
+          if(entering)snapAllCardsToShell();
         }
         requestDraw();
       }
@@ -1043,7 +1072,7 @@
       }
 
       function draw(){
-        frame=0;radius=Math.min(width,height)*.32*zoom;drawSphere();const positions=spaceProfiles(userPoints.map((point,index)=>placedPosition(profileOverrides[data.users[index].id],point,index)));currentPositions=positions;checkLogoContacts(positions);drawConnections(positions);
+        frame=0;stepParkReturn();radius=Math.min(width,height)*.32*zoom;drawSphere();const positions=spaceProfiles(userPoints.map((point,index)=>placedPosition(profileOverrides[data.users[index].id],point,index)));currentPositions=positions;checkLogoContacts(positions);drawConnections(positions);
         const order=positions.map((p,i)=>({i,z:p.z})).sort((a,b)=>a.z-b.z);order.forEach((item,index)=>personElements[item.i].style.zIndex=String(10+index+(data.users[item.i].id===pinnedPersonId?24:0)));
         const compact=width<=760,cardOffsetX=compact?29:40,cardOffsetY=compact?40:50;
         positions.forEach((p,i)=>{const focused=data.users[i].id===pinnedPersonId;const scale=(.76+p.depth*.27)*(1-(p.transit||0)*.16)*(focused?1.42:1);personElements[i].style.transform=`translate3d(${p.x-cardOffsetX}px,${p.y-cardOffsetY}px,0) scale(${scale})`;personElements[i].style.opacity=String(.7+p.depth*.3)});
@@ -1053,7 +1082,7 @@
       function runAmbient(time){
         if(!ambientStartedAt)ambientStartedAt=time;
         if(time-lastAmbientDraw>40){
-          if(pinnedPersonId){
+          if(pinnedPersonId||parkReturn){
             if(frozenAmbientElapsed==null)frozenAmbientElapsed=time-ambientStartedAt;
             ambientElapsed=frozenAmbientElapsed;
           }else{
@@ -1126,7 +1155,7 @@
       const release=e=>{if(!dragging)return;dragging=false;scene.classList.remove('is-dragging');if(scene.hasPointerCapture(e.pointerId))scene.releasePointerCapture(e.pointerId);if(dragDistance<5){const hit=findConnection(e.clientX,e.clientY);if(hit){toggleConnectionPin(hit,e);return}if(pinnedPersonId||pinnedConnection){clearPersonFocus();pinnedConnection=null;hoveredConnection=null;connectionTooltip.classList.remove('open','locked');scene.classList.remove('over-string');requestDraw()}return}runInertia()};
       scene.addEventListener('pointerup',release);scene.addEventListener('pointercancel',release);
       scene.addEventListener('wheel',e=>{e.preventDefault();zoom=clamp(zoom*Math.exp(-e.deltaY*.001),.62,1.5);zoomLabel.textContent=Math.round(zoom*100)+'%';requestDraw()},{passive:false});
-      document.querySelector('.controls').addEventListener('click',e=>{const action=e.target.closest('button')?.dataset.action;if(!action)return;if(action==='zoom-in')zoom=clamp(zoom*1.16,.62,1.5);if(action==='zoom-out')zoom=clamp(zoom/1.16,.62,1.5);if(action==='theme'){darkMode=!darkMode;applyTheme(true)}if(action==='reset'){zoom=1;yaw=(Math.random()-.5)*TAU;pitch=clamp((Math.random()-.5)*.35,-.45,.45);profileOverrides={};scatterUserPoints();clearPersonFocus();pinnedConnection=null;hoveredConnection=null;connectionTooltip.classList.remove('open','locked');scene.classList.remove('over-string');Object.values(profileResetTimers).forEach(clearTimeout);personElements.forEach(person=>{person.classList.add('returning');person.classList.remove('dragging')});setTimeout(()=>personElements.forEach(person=>person.classList.remove('returning')),700)}zoomLabel.textContent=Math.round(zoom*100)+'%';requestDraw()});
+      document.querySelector('.controls').addEventListener('click',e=>{const action=e.target.closest('button')?.dataset.action;if(!action)return;if(action==='zoom-in')zoom=clamp(zoom*1.16,.62,1.5);if(action==='zoom-out')zoom=clamp(zoom/1.16,.62,1.5);if(action==='theme'){darkMode=!darkMode;applyTheme(true)}if(action==='reset'){zoom=1;yaw=(Math.random()-.5)*TAU;pitch=clamp((Math.random()-.5)*.35,-.45,.45);parkReturn=null;profileOverrides={};scatterUserPoints();clearPersonFocus();pinnedConnection=null;hoveredConnection=null;connectionTooltip.classList.remove('open','locked');scene.classList.remove('over-string');Object.values(profileResetTimers).forEach(clearTimeout);personElements.forEach(person=>{person.classList.add('returning');person.classList.remove('dragging')});setTimeout(()=>personElements.forEach(person=>person.classList.remove('returning')),700)}zoomLabel.textContent=Math.round(zoom*100)+'%';requestDraw()});
       addEventListener('keydown',e=>{if(e.key!=='Escape')return;clearPersonFocus();pinnedConnection=null;hoveredConnection=null;connectionTooltip.classList.remove('open','locked');scene.classList.remove('over-string');requestDraw()});
       addEventListener('resize',resize,{passive:true});
       applyTheme();resize();setData(embedded);zoomLabel.textContent=Math.round(zoom*100)+'%';
